@@ -244,6 +244,12 @@ bool nonLinGeomTotalLagTotalDispSolid::evolveImplicitSegregated()
           + rho()*g()
         );
 
+        // Add optional fvOptions, e.g. an MMS body force. We operate on the
+        // matrix source() directly (a plain Field) so the option source, whose
+        // fvMatrix carries different dimensions, is not rejected by fvMatrix
+        // dimension checking. "source()" is already multiplied by the volumes.
+        DEqn.source() += fvOptions()(D())().source();
+
         // Add damping
         if (dampingCoeff().value() > SMALL)
         {
@@ -895,9 +901,13 @@ label nonLinGeomTotalLagTotalDispSolid::formResidual
     // Make residual extensive as fvc operators are intensive (per unit volume)
     residual *= mesh.V();
 
-    // Add optional fvOptions, e.g. MMS body force
-    // Note that "source()" is already multiplied by the volumes
-    //residual -= fvOptions()(ds_, const_cast<volVectorField&>(D))().source();
+    // Add optional fvOptions, e.g. an MMS body force.
+    // Note that "source()" is already multiplied by the volumes. The no-rho
+    // overload is used so the option's addSup(eqn, fieldi) is invoked directly,
+    // without any density weighting of the source. Sign matches the segregated
+    // path (evolveImplicitSegregated), where the option source is added to the
+    // momentum balance.
+    residual += fvOptions()(const_cast<volVectorField&>(D))().source();
 
     // Copy the residual into the f field
     foamPetscSnesHelper::InsertFieldComponents<vector>

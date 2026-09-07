@@ -68,21 +68,6 @@ class electroMechanicalLaw
         //- Surface fibre direction outer product
         surfaceSymmTensorField f0f0f_;
 
-        //- Constant active tension (used when no field-based Ta is available)
-        const dimensionedScalar Ta_;
-
-        //- Ramp time over which Ta is increased from zero to its maximum value
-        const scalar rampTime_;
-
-        //- Flag: true if a field-based "Ta" volScalarField is found in the
-        //  objectRegistry (set by the coupling model). Checked lazily at the
-        //  first call to correct() since the coupling model may register the
-        //  field after the mechanicalLaw is constructed.
-        mutable bool useFieldTa_;
-
-        //- Flag: true once useFieldTa_ has been determined
-        mutable bool fieldTaChecked_;
-
     // Private Member Functions
 
         //- Disallow default bitwise copy construct
