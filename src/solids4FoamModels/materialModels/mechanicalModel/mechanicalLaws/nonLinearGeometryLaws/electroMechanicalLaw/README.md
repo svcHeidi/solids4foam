@@ -27,8 +27,8 @@ sigma        = sigma_passive + symm(F & (Ta_current*A0) & F^T)/J
 ```
 
 When a cell-centred `Ta` field exists in the mesh object registry at the first
-call to `correct`, `Ta_current` is that field. Otherwise the dictionary value
-is ramped according to:
+call to `correct`, `Ta_current` is that field. Otherwise the optional
+dictionary value is ramped according to:
 
 ```text
 Ta_current = (t/rampTime)*activeTension    for t < rampTime
@@ -57,16 +57,17 @@ not compiled for foam-extend.
 | Entry | Required | Description |
 | --- | --- | --- |
 | `rho` | yes | Density, `[1 -3 0 0 0 0 0]` |
-| `activeTension` | yes | Constant active tension, `[1 -1 -2 0 0 0 0]` |
-| `rampTime` | yes | Ramp duration in simulation-time units |
+| `activeTension` | no | Constant active tension, `[1 -1 -2 0 0 0 0]`, used when no `Ta` field is registered |
+| `rampTime` | no | Ramp duration of the constant tension in simulation-time units; default `0` |
 | `passiveMechanicalLaw` | yes | Passive nonlinear-law sub-dictionary |
 | `passiveMechanicalLaw.type` | yes | Runtime type of the passive law |
 | `solvePressureEqn` | no | Base-class switch; default `false` |
 | `pressureSmoothingScaleFactor` | no | Base-class scalar; default `100` |
 | `regionName` | no | Base mesh region used to find the solid model |
 
-`activeTension` and `rampTime` remain required when a `Ta` field will be used,
-because the constructor reads both before checking the registry. A negative
+`activeTension` and `rampTime` are only needed when no coupling model registers
+a `Ta` field. If neither a `Ta` field nor `activeTension` is available at the
+first stress correction, the law stops with a fatal error. A negative
 `rampTime` is rejected. A zero value applies the full constant tension without
 division by zero because the ramp branch is then not entered for non-negative
 simulation time.
@@ -94,8 +95,9 @@ mechanical
     {
         type            electroMechanicalLaw;
         rho             rho [1 -3 0 0 0 0 0] 3000;
-        activeTension   activeTension [1 -1 -2 0 0 0 0] 0;
-        rampTime        0;
+        // Constant active tension when no coupling model registers Ta:
+        // activeTension   activeTension [1 -1 -2 0 0 0 0] 60e3;
+        // rampTime        1;
 
         passiveMechanicalLaw
         {
@@ -118,8 +120,8 @@ mechanical
 ```
 
 The outer law still requires separate `f0` and `f0f` field files even when the
-passive law uses its own uniform fibre setting. Set `activeTension` to the
-fallback value required when no coupling model registers `Ta`.
+passive law uses its own uniform fibre setting. Set `activeTension` only when
+no coupling model registers `Ta`.
 
 ### Field glossary
 
@@ -143,8 +145,9 @@ fallback value required when no coupling model registers `Ta`.
 
 `electroMechanicalLaw` derives directly from `mechanicalLaw` and is registered
 in the `nonLinGeomMechLaw` selection table. It owns an `autoPtr<mechanicalLaw>`
-for the passive law, the `f0`, `f0f`, `f0f0` and `f0f0f` fields, the constant
-`Ta_`, the scalar `rampTime_`, and two mutable flags that cache the registry
+for the passive law, the `f0`, `f0f`, `f0f0` and `f0f0f` fields, the optional
+constant `Ta_` (with `constantTa_` recording whether it was given), the scalar
+`rampTime_`, and two mutable flags that cache the registry
 check for field-based active tension.
 
 There are no fork-specific guards in this class. Its source is listed in both
@@ -162,15 +165,17 @@ Construction proceeds in this order:
    used to construct a nonlinear mechanical law through the runtime table.
 3. `f0` is read and `f0f0` is formed as `sqr(f0)`.
 4. `f0f` is read independently and `f0f0f` is formed as `sqr(f0f)`.
-5. The required `activeTension` dimensioned scalar and `rampTime` scalar are
-   read, and the registry-check flags are initialised to `false`.
+5. The optional `activeTension` dimensioned scalar (zero when absent) and
+   `rampTime` scalar (default `0`) are read, and the registry-check flags are
+   initialised to `false`.
 6. A negative `rampTime` triggers `FatalError` with the message that it should
    be greater than or equal to zero.
 
 The base class also emits a fatal error if it cannot identify `solid` or
 `region0` and no `regionName` is supplied. It prints an informational message
 when `solvePressureEqn` is enabled. On the first stress correction, this law
-prints whether it selected field-based or constant active tension.
+prints whether it selected field-based or constant active tension, and stops
+with a fatal error when it has neither.
 
 ### Key methods
 

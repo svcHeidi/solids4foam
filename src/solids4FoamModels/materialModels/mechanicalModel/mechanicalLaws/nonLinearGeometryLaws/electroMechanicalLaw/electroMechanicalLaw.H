@@ -68,10 +68,15 @@ class electroMechanicalLaw
         //- Surface fibre direction outer product
         surfaceSymmTensorField f0f0f_;
 
-        //- Constant active tension (used when no field-based Ta is available)
+        //- True when a constant active tension is given
+        const bool constantTa_;
+
+        //- Optional constant active tension (used when no field-based Ta is
+        //  available)
         const dimensionedScalar Ta_;
 
-        //- Ramp time over which Ta is increased from zero to its maximum value
+        //- Optional ramp time over which the constant Ta is increased from
+        //  zero to its maximum value
         const scalar rampTime_;
 
         //- Flag: true if a field-based "Ta" volScalarField is found in the

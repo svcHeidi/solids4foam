@@ -82,8 +82,14 @@ Foam::electroMechanicalLaw::electroMechanicalLaw
         mesh
     ),
     f0f0f_("f0f0f", sqr(f0f_)),
-    Ta_(dict.lookup("activeTension")),
-    rampTime_(readScalar(dict.lookup("rampTime"))),
+    constantTa_(dict.found("activeTension")),
+    Ta_
+    (
+        constantTa_
+      ? dimensionedScalar(dict.lookup("activeTension"))
+      : dimensionedScalar("activeTension", dimPressure, 0.0)
+    ),
+    rampTime_(dict.lookupOrDefault<scalar>("rampTime", 0.0)),
     useFieldTa_(false),
     fieldTaChecked_(false)
 {
@@ -139,6 +145,15 @@ void Foam::electroMechanicalLaw::correct(volSymmTensorField& sigma)
             Info<< "    electroMechanicalLaw: using field-based active tension"
                 << " (Ta volScalarField from objectRegistry)" << endl;
         }
+        else if (!constantTa_)
+        {
+            FatalErrorIn("electroMechanicalLaw::correct(...)")
+                << "electroMechanicalLaw found no active tension field Ta in "
+                << "the objectRegistry and no constant 'activeTension' entry. "
+                << "Supply Ta from an electromechanical coupling, or set "
+                << "'activeTension' (and optionally 'rampTime')."
+                << abort(FatalError);
+        }
         else
         {
             Info<< "    electroMechanicalLaw: using constant active tension"
@@ -192,6 +207,15 @@ void Foam::electroMechanicalLaw::correct(surfaceSymmTensorField& sigma)
         {
             Info<< "    electroMechanicalLaw: using field-based active tension"
                 << " (Ta volScalarField from objectRegistry)" << endl;
+        }
+        else if (!constantTa_)
+        {
+            FatalErrorIn("electroMechanicalLaw::correct(...)")
+                << "electroMechanicalLaw found no active tension field Ta in "
+                << "the objectRegistry and no constant 'activeTension' entry. "
+                << "Supply Ta from an electromechanical coupling, or set "
+                << "'activeTension' (and optionally 'rampTime')."
+                << abort(FatalError);
         }
         else
         {

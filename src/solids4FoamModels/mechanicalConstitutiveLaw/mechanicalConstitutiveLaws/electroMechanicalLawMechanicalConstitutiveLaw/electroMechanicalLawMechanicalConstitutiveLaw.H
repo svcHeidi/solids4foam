@@ -96,7 +96,8 @@ class electroMechanicalLawMechanicalConstitutiveLaw
         //  Asked for explicitly rather than detected, because a law that
         //  quietly looks for a field it was never given the chance to receive
         //  reports nothing and uses the constant instead - which is a wrong
-        //  answer that runs to completion
+        //  answer that runs to completion. On by default when no constant
+        //  'activeTension' is given
         const Switch TaFromField_;
 
         //- The fibre direction to use where a case supplies no f0 field
