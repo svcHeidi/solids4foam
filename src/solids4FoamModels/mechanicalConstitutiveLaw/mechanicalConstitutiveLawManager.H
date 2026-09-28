@@ -506,6 +506,17 @@ class mechanicalConstitutiveLawManager
             topologyEntry& tp
         ) const;
 
+        //- Gather one law's live coupling inputs on a boundary patch.
+        //  Boundary integration points are addressed by patch-face index,
+        //  rather than by the topology's internal integration-point IDs.
+        mechanicalConstitutiveLawInputs patchLawInputs
+        (
+            const label lawI,
+            const label patchI,
+            const scalar dt,
+            topologyEntry& tp
+        ) const;
+
         //- As lawInputs, for a law's faces on one boundary patch. The values
         //  come from the field's patch values, not from the cells behind it
         mechanicalConstitutiveLawInputs lawInputsPatch
